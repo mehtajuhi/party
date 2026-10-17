@@ -6,6 +6,8 @@
 <title>You're invited</title>
 <meta property="og:title" content="You're invited">
 <meta property="og:description" content="Tap to see the details and RSVP">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Fraunces:opsz,wght@9..144,500&family=Mulish:wght@400;600;700&family=Rozha+One&display=swap">
 <style>
@@ -23,6 +25,10 @@
 .t-birthday{--bg:#eef0ff;--glow:#d6daff;--card:#ffffff;--card2:#f8f9ff;--ink:#1d1f3f;--muted:#5c5f86;--accent:#5b47e0;--accent-ink:#fff;--field:#fff;--ok:#1f8a4c;--warn:#9a6200;--no:#c0392b;--display:"Baloo 2",system-ui,sans-serif;color-scheme:light}
 .t-dinner{--bg:#10261f;--glow:#1f4a3a;--card:#163329;--card2:#122b23;--ink:#f1ece0;--muted:#b9b3a2;--accent:#d9b26f;--accent-ink:#1d1606;--field:#0c1f19;--ok:#8fd6a6;--warn:#f0cf7a;--no:#ef9a8f;--display:"Fraunces",Georgia,serif;color-scheme:dark}
 
+/* older phones without color-mix(): plain translucent fallbacks */
+@supports not (color: color-mix(in srgb, red 50%, blue)){
+  :root{--line:rgba(160,150,140,.38);--soft:rgba(160,150,140,.14)}
+}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0}
@@ -76,9 +82,10 @@ textarea{min-height:70px;resize:vertical}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .choices input{position:absolute;opacity:0;pointer-events:none;width:1px}
-.choices label{display:block;text-align:center;border:1px solid var(--line);border-radius:10px;padding:11px 6px;cursor:pointer;font-weight:700}
-.choices label:has(input:checked){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.choices label:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:2px}
+.choices label{display:block;position:relative;cursor:pointer;font-weight:700}
+.choices span{display:block;height:100%;text-align:center;border:1px solid var(--line);border-radius:10px;padding:11px 6px}
+.choices input:checked + span{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.choices input:focus-visible + span{outline:2px solid var(--ink);outline-offset:2px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .row > *{min-width:0}
 .hint{font-weight:400;color:var(--muted);font-size:13px}
@@ -87,7 +94,14 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.sm{padding:8px 12px;font-size:13px;border-radius:9px}
 .msg{border-radius:10px;padding:12px 14px;font-weight:600}
-.msg.err{background:color-mix(in srgb,var(--no) 14%,transparent);color:var(--no)}
+.msg.err{background:rgba(220,80,70,.12);background:color-mix(in srgb,var(--no) 14%,transparent);color:var(--no)}
+.loadnote{font-size:14px;color:var(--muted);margin:6px 0 0}
+.spinner{width:38px;height:38px;margin:14px auto 4px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite}
+.btn .spin{display:inline-block;width:15px;height:15px;margin-right:8px;vertical-align:-2px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner,.btn .spin{animation-duration:2.4s}}
+.errbox{display:grid;gap:12px;justify-items:center;text-align:center}
+.errbox .detail{font-size:11px;color:var(--muted);opacity:.8;overflow-wrap:anywhere}
 .msg.info{background:var(--soft);color:var(--ink);font-weight:400}
 .done{text-align:center}
 .done .big{font-family:var(--display);font-size:30px;margin:4px 0;line-height:1.2}
@@ -123,6 +137,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .guest .meta{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
 .guest .said{font-size:14px;white-space:pre-line;overflow-wrap:anywhere}
 .pill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill{background:rgba(160,150,140,.16)}
 .pill.yes{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
 .pill.maybe{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
 .pill.no{background:color-mix(in srgb,var(--no) 16%,transparent);color:var(--no)}
@@ -159,6 +174,13 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
     <div class="deco" id="deco" aria-hidden="true"></div>
     <div class="eyebrow" id="ev-eyebrow">You're invited</div>
     <h1 id="ev-title" class="skeleton">Loading invite…</h1>
+    <div class="spinner" id="spinner" role="progressbar" aria-label="Loading invite"></div>
+    <p class="loadnote" id="loadnote" hidden>Still loading. The first open can take a few seconds…</p>
+    <div class="errbox" id="errbox" hidden>
+      <p class="sub" id="err-text" style="margin:0"></p>
+      <button class="btn" id="retry" type="button">Try again</button>
+      <div class="detail" id="err-detail"></div>
+    </div>
     <p class="hosts" id="ev-hosts"></p>
     <div class="facts" id="ev-facts"></div>
     <p class="note" id="ev-note" hidden></p>
@@ -348,10 +370,28 @@ function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("show
 /* ---------- backend (Google Script, or an in-tab demo) ---------- */
 const demo = !SCRIPT_URL;
 const DEMO = { events:{ "diwali-2026": clone(DEFAULTS) }, def:"diwali-2026", rsvps:[] };
+function ApiError(kind, detail){ const e=new Error(kind); e.kind=kind; e.detail=detail; return e; }
+async function callScript(p, ms){
+  const ctl = typeof AbortController!=="undefined" ? new AbortController() : null;
+  const timer = setTimeout(()=>{ if(ctl) ctl.abort(); }, ms);
+  let res;
+  try{
+    res = await fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p),signal:ctl?ctl.signal:undefined,redirect:"follow"});
+  }catch(err){
+    throw ApiError(err && err.name==="AbortError" ? "timeout" : "network", String(err && err.message || err));
+  }finally{ clearTimeout(timer); }
+  const text = await res.text();
+  try{ return JSON.parse(text); }
+  catch(e){ throw ApiError("badreply", "HTTP "+res.status+": "+text.slice(0,120).replace(/\s+/g," ")); }
+}
 async function api(p){
   if (!demo){
-    const r = await fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)});
-    return r.json();
+    try{ return await callScript(p, 15000); }
+    catch(err){
+      // one automatic retry for network blips / slow first start
+      if (err.kind==="badreply") throw err;
+      return await callScript(p, 20000);
+    }
   }
   await new Promise(r=>setTimeout(r,250));
   const evs = () => Object.keys(DEMO.events).map(id=>{ const y=DEMO.rsvps.filter(r=>r.event===id&&r.status==="Yes");
@@ -407,7 +447,7 @@ function renderInvite(c){
 }
 
 function fillSelect(sel, values, keep){
-  const cur = keep ?? sel.value; sel.innerHTML = "";
+  const cur = keep != null ? keep : sel.value; sel.innerHTML = "";
   values.forEach(v=>sel.add(new Option(v,v)));
   if (values.map(String).includes(String(cur))) sel.value = cur;
 }
@@ -462,12 +502,12 @@ $("rsvp").addEventListener("submit", async e=>{
     adults:no?0:+$("f-adults").value, kids:no||!c.askKids?0:+$("f-kids").value,
     food:no||$("food-wrap").dataset.off?"":$("f-food").value, answer:c.question?$("f-answer").value.trim():"", message:$("f-msg").value.trim()};
   if (!no && p.adults+p.kids===0){ m.textContent="Pick at least one person who's coming."; m.hidden=false; return; }
-  const b=$("submit-btn"); b.disabled=true; b.textContent="Sending…";
+  const b=$("submit-btn"); b.disabled=true; b.innerHTML='<i class="spin" aria-hidden="true"></i>Sending…';
   try{
     const r=await api(p);
     if(!r.ok) throw new Error(r.error||"");
     store.set("rsvp_mine_"+evId, p); showDone(p,false);
-  }catch(err){ m.textContent = err.message && err.message!=="Failed to fetch" ? err.message : "Couldn't send your RSVP. Check your connection and try again."; m.hidden=false; }
+  }catch(err){ m.textContent = !err.kind && err.message ? err.message : err.kind==="timeout" ? "That took too long. Check your signal and tap Send again." : "Couldn't send your RSVP. Check your connection, or try opening the link in Chrome or Safari."; m.hidden=false; }
   finally{ b.disabled=false; b.textContent="Send RSVP"; }
 });
 
@@ -476,7 +516,7 @@ function applyEvent(id, config){
   renderInvite(ev); renderForm(ev);
   const mine = store.get("rsvp_mine_"+id);
   if (mine){ prefill(mine); if (ev.open) showDone(mine,true); }
-  else { $("rsvp").reset(); renderForm(ev); $("done").hidden=true; $("rsvp-form-wrap").hidden=!ev.open; }
+  else { $("rsvp").reset(); $("f-adults").innerHTML=""; $("f-kids").innerHTML=""; renderForm(ev); $("done").hidden=true; $("rsvp-form-wrap").hidden=!ev.open; }
 }
 function showMissing(code){
   $("ev-title").classList.remove("skeleton");
@@ -511,7 +551,7 @@ function showPane(name){
   ["login","guests","invite","events"].forEach(n=>$("p-"+n).hidden = n!==name);
   $("tabs").hidden = name==="login";
   document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected", b.dataset.tab===name));
-  $("ptitle").textContent = name==="login" ? "Host tools" : (draft&&isNew ? "New: "+editingId : (ev?.title||"Host tools"));
+  $("ptitle").textContent = name==="login" ? "Host tools" : (draft&&isNew ? "New: "+editingId : ((ev&&ev.title)||"Host tools"));
 }
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 function switchTab(t){
@@ -567,12 +607,12 @@ function renderGuests(){
     const pl=g.querySelector(".pill"); pl.className="pill "+String(r.status).toLowerCase(); pl.textContent=r.status;
     const bits=[]; if(r.status!=="No"){ bits.push(`${r.adults} adult${r.adults==1?"":"s"}`); if(+r.kids) bits.push(`${r.kids} kid${r.kids==1?"":"s"}`); if(r.food) bits.push(r.food); } if(r.phone) bits.push(r.phone);
     g.querySelector(".meta").textContent=bits.join(" · ");
-    [[ev?.question,r.answer],["",r.message]].forEach(([q,a])=>{ if(!a) return; const d=document.createElement("div"); d.className="said"; d.textContent=(q?q+" → ":"“")+a+(q?"":"”"); g.append(d); });
+    [[ev&&ev.question,r.answer],["",r.message]].forEach(([q,a])=>{ if(!a) return; const d=document.createElement("div"); d.className="said"; d.textContent=(q?q+" → ":"“")+a+(q?"":"”"); g.append(d); });
     gl.append(g);
   });
 }
 $("refresh").onclick = loadGuests;
-$("copy-list").onclick = () => copy(rows.filter(r=>r.status!=="No").map(r=>`${r.name} – ${r.status} – ${r.adults} adults${ev?.askKids?`, ${r.kids} kids`:""}${r.food?" – "+r.food:""}`).join("\n") || "No RSVPs yet", "Guest list copied");
+$("copy-list").onclick = () => copy(rows.filter(r=>r.status!=="No").map(r=>`${r.name} – ${r.status} – ${r.adults} adults${ev&&ev.askKids?`, ${r.kids} kids`:""}${r.food?" – "+r.food:""}`).join("\n") || "No RSVPs yet", "Guest list copied");
 $("copy-link").onclick = () => copy(linkFor(evId), "Invite link copied");
 $("share-wa").onclick = () => shareWA(evId, ev);
 
@@ -587,10 +627,10 @@ Object.entries(THEMES).forEach(([k,t])=>{ const b=document.createElement("button
   b.onclick=()=>{ draft.theme=k; draft.accent=""; buildEditor(); live(); }; themeBox.append(b); });
 
 function buildEditor(){
-  document.querySelectorAll("[data-k]").forEach(inp=>{ const v=draft[inp.dataset.k]; if(inp.type==="checkbox") inp.checked=!!v; else inp.value=v??""; });
+  document.querySelectorAll("[data-k]").forEach(inp=>{ const v=draft[inp.dataset.k]; if(inp.type==="checkbox") inp.checked=!!v; else inp.value=v!=null?v:""; });
   themeBox.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.theme===draft.theme));
   $("e-accent-def").checked = !draft.accent;
-  $("e-accent").value = draft.accent || THEMES[draft.theme]?.sw || "#f4a81d";
+  $("e-accent").value = draft.accent || (THEMES[draft.theme]||THEMES.diwali).sw;
   $("food-editor").hidden = !draft.askFood;
   renderFoodOpts();
   $("new-banner").hidden = !isNew;
@@ -631,7 +671,7 @@ $("discard").onclick=()=>{
   draft=clone(ev); dirty=false; buildEditor(); renderInvite(ev); renderForm(ev);
 };
 $("save").onclick=async()=>{
-  const b=$("save"); b.disabled=true; b.textContent="Saving…";
+  const b=$("save"); b.disabled=true; b.innerHTML='<i class="spin" aria-hidden="true"></i>Saving…';
   const cfg={...draft, foodOptions:draft.foodOptions.map(s=>s.trim()).filter(Boolean)};
   try{
     const r=await api({action:"save",key:hostKey,id:editingId,config:cfg});
@@ -689,15 +729,39 @@ $("n-create").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
+function showLoadError(err){
+  $("loadnote").hidden = true;
+  $("ev-title").classList.remove("skeleton");
+  $("ev-eyebrow").textContent = "";
+  $("ev-title").textContent = "Couldn't load the invite";
+  $("err-text").textContent =
+    err.kind==="timeout"  ? "The invite is taking too long to load. Check your signal and try again." :
+    err.kind==="badreply" ? "The invite isn't available right now. Please let the hosts know." :
+    "Your phone couldn't reach the invite. Try mobile data instead of Wi-Fi, or open the link in Chrome or Safari (ad blockers can stop it loading).";
+  $("err-detail").textContent = "Error: " + err.kind + (err.detail ? " · " + err.detail : "");
+  $("errbox").hidden = false;
+  $("rsvp-card").hidden = true;
+}
+const firstEventId = evId;
+async function loadEvent(){
+  const cacheKey = "rsvp_cfg_"+(firstEventId||"_main");
+  const cached = store.get(cacheKey);
+  $("errbox").hidden = true;
+  if (cached && cached.config){ $("spinner").hidden=true; applyEvent(cached.id, cached.config); }   // instant on repeat visits, refreshed below
+  else { $("ev-title").textContent="Loading invite…"; $("ev-title").classList.add("skeleton"); $("spinner").hidden=false; }
+  const slow = setTimeout(()=>{ if(!ev) $("loadnote").hidden=false; }, 3500);
+  try{
+    const r = await api({action:"event", event:firstEventId});
+    if (r.ok){ if (!draft){ applyEvent(r.id, r.config); } store.set(cacheKey, {id:r.id, config:r.config}); if(!firstEventId) defaultId=r.id; }
+    else { store.del(cacheKey); ev=null; showMissing(r.code); }
+  }catch(err){
+    if (!(cached && cached.config)) showLoadError(err.kind ? err : ApiError("network", String(err)));
+  }finally{ clearTimeout(slow); $("loadnote").hidden=true; $("spinner").hidden=true; }
+}
+$("retry").onclick = loadEvent;
 (async function boot(){
   $("demo-note").hidden = !demo;
-  const cached = store.get("rsvp_cfg_"+(evId||"_main"));
-  if (cached && cached.config){ applyEvent(cached.id, cached.config); }
-  try{
-    const r = await api({action:"event", event:evId});
-    if (r.ok){ if (!draft){ applyEvent(r.id, r.config); } store.set("rsvp_cfg_"+(evId||"_main"), {id:r.id, config:r.config}); if(!new URLSearchParams(location.search).get("e")) defaultId=r.id; }
-    else { store.del("rsvp_cfg_"+(evId||"_main")); ev=null; showMissing(r.code); }
-  }catch{ if (!cached) showMissing("not_found"); }
+  await loadEvent();
   updateChip();
   if (location.hash==="#host") openHost();
 })();
