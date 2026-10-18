@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="t-diwali">
+<html lang="en" class="t-simple">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -24,6 +24,8 @@
 .t-holi{--bg:#fff3ea;--glow:#ffd3e4;--card:#ffffff;--card2:#fffaf6;--ink:#2a1838;--muted:#6d5a76;--accent:#d6286f;--accent-ink:#fff;--field:#fff;--ok:#1f8a4c;--warn:#9a6200;--no:#c0392b;--display:"Baloo 2",system-ui,sans-serif;color-scheme:light}
 .t-birthday{--bg:#eef0ff;--glow:#d6daff;--card:#ffffff;--card2:#f8f9ff;--ink:#1d1f3f;--muted:#5c5f86;--accent:#5b47e0;--accent-ink:#fff;--field:#fff;--ok:#1f8a4c;--warn:#9a6200;--no:#c0392b;--display:"Baloo 2",system-ui,sans-serif;color-scheme:light}
 .t-dinner{--bg:#10261f;--glow:#1f4a3a;--card:#163329;--card2:#122b23;--ink:#f1ece0;--muted:#b9b3a2;--accent:#d9b26f;--accent-ink:#1d1606;--field:#0c1f19;--ok:#8fd6a6;--warn:#f0cf7a;--no:#ef9a8f;--display:"Fraunces",Georgia,serif;color-scheme:dark}
+.t-babyshower{--bg:#f4f1f6;--glow:#dcebf5;--card:#ffffff;--card2:#fdfbfd;--ink:#33304a;--muted:#6f6a85;--accent:#d97a98;--accent-ink:#fff;--field:#fff;--ok:#2f8a5b;--warn:#9a6a00;--no:#c0392b;--display:"Baloo 2",system-ui,sans-serif;color-scheme:light}
+.t-simple{--bg:#f3f2ef;--glow:#e7e6e1;--card:#ffffff;--card2:#ffffff;--ink:#1f2328;--muted:#5d636b;--accent:#3d5a80;--accent-ink:#fff;--field:#fff;--ok:#2f7a4f;--warn:#9a6a00;--no:#b83a32;--display:"Fraunces",Georgia,serif;color-scheme:light}
 
 /* older phones without color-mix(): plain translucent fallbacks */
 @supports not (color: color-mix(in srgb, red 50%, blue)){
@@ -95,8 +97,25 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .btn.sm{padding:8px 12px;font-size:13px;border-radius:9px}
 .msg{border-radius:10px;padding:12px 14px;font-weight:600}
 .msg.err{background:rgba(220,80,70,.12);background:color-mix(in srgb,var(--no) 14%,transparent);color:var(--no)}
-.loadnote{font-size:14px;color:var(--muted);margin:6px 0 0}
-.spinner{width:38px;height:38px;margin:14px auto 4px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite}
+/* loading progress */
+.loader{max-width:300px;margin:16px auto 4px;display:grid;gap:8px}
+.bar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--accent);transition:width .25s ease-out;
+  background-image:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);background-size:200% 100%;animation:shine 1.4s linear infinite}
+@keyframes shine{from{background-position:150% 0}to{background-position:-50% 0}}
+.loadrow{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted)}
+.loadrow b{color:var(--ink);font-variant-numeric:tabular-nums}
+.reveal{animation:reveal .45s ease-out}
+@keyframes reveal{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.bar i,.reveal{animation:none}}
+/* new theme decorations */
+.bunting{position:relative;display:flex;gap:6px;padding-top:4px}
+.bunting::before{content:"";position:absolute;left:-6px;right:-6px;top:3px;height:12px;border-top:1.5px solid var(--muted);border-radius:50%/0 0 100% 100%;opacity:.5}
+.flag{display:block;width:20px;height:24px;clip-path:polygon(0 0,100% 0,50% 100%);animation:sway 3s ease-in-out infinite;transform-origin:top center}
+.flag:nth-child(even){animation-delay:.7s;margin-top:4px}
+@keyframes sway{50%{transform:rotate(6deg)}}
+.rule{width:140px;height:24px;color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.flag{animation:none}}
 .btn .spin{display:inline-block;width:15px;height:15px;margin-right:8px;vertical-align:-2px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spinner,.btn .spin{animation-duration:2.4s}}
@@ -174,8 +193,10 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
     <div class="deco" id="deco" aria-hidden="true"></div>
     <div class="eyebrow" id="ev-eyebrow">You're invited</div>
     <h1 id="ev-title" class="skeleton">Loading invite…</h1>
-    <div class="spinner" id="spinner" role="progressbar" aria-label="Loading invite"></div>
-    <p class="loadnote" id="loadnote" hidden>Still loading. The first open can take a few seconds…</p>
+    <div class="loader" id="loader" hidden>
+      <div class="bar" role="progressbar" aria-label="Loading invite" aria-valuemin="0" aria-valuemax="100" id="bar"><i id="bar-fill"></i></div>
+      <div class="loadrow"><span id="load-step">Connecting…</span><b id="load-pct">0%</b></div>
+    </div>
     <div class="errbox" id="errbox" hidden>
       <p class="sub" id="err-text" style="margin:0"></p>
       <button class="btn" id="retry" type="button">Try again</button>
@@ -215,7 +236,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
         </div>
         <label for="f-food" id="food-wrap">Food preference <select id="f-food"></select></label>
         <label for="f-answer" id="q-wrap"><span id="q-text"></span> <input id="f-answer" maxlength="200"></label>
-        <label for="f-msg">Message for the hosts <span class="hint">optional · allergies, anything else we should know, notes for host, etc.</span>
+        <label for="f-msg">Message for the hosts <span class="hint">optional · allergies, bringing a dish, etc.</span>
           <textarea id="f-msg" maxlength="400"></textarea>
         </label>
         <div id="form-msg" class="msg err" hidden></div>
@@ -348,7 +369,9 @@ const THEMES = {
   diwali:  {label:"Diwali night", sw:"#f4a81d", bg:"#1a1433"},
   holi:    {label:"Holi colours", sw:"#d6286f", bg:"#fff3ea"},
   birthday:{label:"Birthday",     sw:"#5b47e0", bg:"#eef0ff"},
-  dinner:  {label:"Dinner party", sw:"#d9b26f", bg:"#10261f"}
+  dinner:  {label:"Dinner party", sw:"#d9b26f", bg:"#10261f"},
+  babyshower:{label:"Baby shower", sw:"#d97a98", bg:"#dcebf5"},
+  simple:  {label:"Simple (any event)", sw:"#3d5a80", bg:"#f3f2ef"}
 };
 const DEFAULTS = {
   theme:"diwali", accent:"", eyebrow:"You're invited", title:"Diwali Dinner", hosts:"Hosted by Juhi & Chintan",
@@ -418,6 +441,8 @@ let hostEvents = [], defaultId = "", draft = null, editingId = "", isNew = false
 function decoHTML(t){
   if (t==="holi") return ["#d6286f","#ffb703","#2fb5a0","#7b5cff","#ff6b3d"].map((c,i)=>`<i class="dot" style="background:${c};width:${[18,28,22,30,16][i]}px;height:${[18,28,22,30,16][i]}px"></i>`).join("");
   if (t==="birthday") return ["#5b47e0","#ff6b8b","#ffc23d","#2fb5a0","#5b47e0","#ff6b8b","#ffc23d"].map((c,i)=>`<i class="conf" style="background:${c};transform:rotate(${[-30,20,-10,35,-25,10,-40][i]}deg)"></i>`).join("");
+  if (t==="babyshower") return '<div class="bunting">'+["#f4b6c8","#a9d3ee","#bfe3cf","#f7dd9b","#f4b6c8","#a9d3ee","#bfe3cf"].map(c=>`<i class="flag" style="background:${c}"></i>`).join("")+'</div>';
+  if (t==="simple") return `<svg class="rule" viewBox="0 0 140 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M6 12h52M82 12h52"/><circle cx="70" cy="12" r="4" fill="currentColor"/></svg>`;
   if (t==="dinner") return `<svg class="orn" viewBox="0 0 180 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 12h66M110 12h66"/><path d="M90 3l9 9-9 9-9-9z" fill="currentColor" fill-opacity=".25"/><circle cx="76" cy="12" r="2" fill="currentColor"/><circle cx="104" cy="12" r="2" fill="currentColor"/></svg>`;
   return '<i class="diya"></i><i class="diya"></i><i class="diya"></i>';
 }
@@ -682,6 +707,11 @@ $("save").onclick=async()=>{
     history.replaceState(null,"",editingId===defaultId?location.pathname:location.pathname+"?e="+encodeURIComponent(editingId));
     buildEditor(); showPane("invite");
     toast(wasNew?"Saved. Your new invite link is under My events":"Saved. Guests now see the new version");
+    // check the Google Script kept the theme (older scripts only know diwali/holi/birthday/dinner)
+    api({action:"event",event:editingId}).then(chk=>{
+      if (chk.ok && chk.config && chk.config.theme !== cfg.theme)
+        toast(`Saved, but your Google Script doesn't know the "${THEMES[cfg.theme].label}" theme yet. Guests will see ${(THEMES[chk.config.theme]||THEMES.diwali).label}. Update the THEMES line in Code.gs.`);
+    }).catch(()=>{});
   }catch(err){ toast(err.message||"Couldn't save. Try again."); }
   finally{ b.disabled=false; b.textContent="Save"; }
 };
@@ -730,7 +760,7 @@ $("n-create").onclick=()=>{
 
 /* ---------- boot ---------- */
 function showLoadError(err){
-  $("loadnote").hidden = true;
+  $("loader").hidden = true;
   $("ev-title").classList.remove("skeleton");
   $("ev-eyebrow").textContent = "";
   $("ev-title").textContent = "Couldn't load the invite";
@@ -742,21 +772,56 @@ function showLoadError(err){
   $("errbox").hidden = false;
   $("rsvp-card").hidden = true;
 }
+/* Progress estimate: a single request can't report real progress, so the bar eases toward ~95%
+   based on how long the invite usually takes on this phone, then fills to 100% the moment it arrives. */
+function startProgress(){
+  const now = () => (window.performance && performance.now) ? performance.now() : Date.now();
+  const learned = +store.get("rsvp_load_ms") || 0;
+  const expected = Math.max(2500, Math.min(15000, learned || 6000));
+  const t0 = now(); let stopped = false, timer;
+  const steps = [[0,"Connecting…"],[18,"Waking up the invite…"],[50,"Fetching your invite…"],[80,"Almost there…"]];
+  function paint(pct, label){
+    $("bar-fill").style.width = pct+"%"; $("load-pct").textContent = Math.round(pct)+"%";
+    $("bar").setAttribute("aria-valuenow", Math.round(pct)); $("load-step").textContent = label;
+  }
+  function tick(){
+    if (stopped) return;
+    const el = now()-t0, x = el/expected;
+    const pct = Math.min(95, 100*(1-Math.exp(-2.3*x)));
+    let label = steps.filter(s=>pct>=s[0]).pop()[1];
+    if (x > 1.6) label = "Taking a little longer than usual…";
+    paint(pct, label); timer = setTimeout(tick, 120);
+  }
+  $("loader").hidden = false; paint(0, steps[0][1]); tick();
+  return {
+    finish(ok){
+      stopped = true; clearTimeout(timer);
+      if (ok){ const el = Math.round(now()-t0); store.set("rsvp_load_ms", learned ? Math.round(learned*0.6+el*0.4) : el); paint(100, "Opening your invite…"); }
+      return new Promise(res=>setTimeout(()=>{ $("loader").hidden = true; res(); }, ok ? 350 : 0));
+    }
+  };
+}
 const firstEventId = evId;
 async function loadEvent(){
   const cacheKey = "rsvp_cfg_"+(firstEventId||"_main");
   const cached = store.get(cacheKey);
+  const hasCache = !!(cached && cached.config);
   $("errbox").hidden = true;
-  if (cached && cached.config){ $("spinner").hidden=true; applyEvent(cached.id, cached.config); }   // instant on repeat visits, refreshed below
-  else { $("ev-title").textContent="Loading invite…"; $("ev-title").classList.add("skeleton"); $("spinner").hidden=false; }
-  const slow = setTimeout(()=>{ if(!ev) $("loadnote").hidden=false; }, 3500);
+  let prog = null;
+  if (hasCache){ applyEvent(cached.id, cached.config); }   // instant on repeat visits, refreshed quietly below
+  else { $("ev-title").textContent="Loading invite…"; $("ev-title").classList.add("skeleton"); prog = startProgress(); }
   try{
     const r = await api({action:"event", event:firstEventId});
-    if (r.ok){ if (!draft){ applyEvent(r.id, r.config); } store.set(cacheKey, {id:r.id, config:r.config}); if(!firstEventId) defaultId=r.id; }
+    if (prog) await prog.finish(true);
+    if (r.ok){
+      if (!draft){ applyEvent(r.id, r.config); if (!hasCache) document.querySelectorAll(".card").forEach(c=>{ c.classList.remove("reveal"); void c.offsetWidth; c.classList.add("reveal"); }); }
+      store.set(cacheKey, {id:r.id, config:r.config}); if(!firstEventId) defaultId=r.id;
+    }
     else { store.del(cacheKey); ev=null; showMissing(r.code); }
   }catch(err){
-    if (!(cached && cached.config)) showLoadError(err.kind ? err : ApiError("network", String(err)));
-  }finally{ clearTimeout(slow); $("loadnote").hidden=true; $("spinner").hidden=true; }
+    if (prog) await prog.finish(false);
+    if (!hasCache) showLoadError(err.kind ? err : ApiError("network", String(err)));
+  }
 }
 $("retry").onclick = loadEvent;
 (async function boot(){
